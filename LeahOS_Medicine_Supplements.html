@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f7f3ff"><title>LeahOS · Medicine & Supplements</title>
+<style>
+:root{--ink:#302b3b;--muted:#756f80;--purple:#8060a8;--purple-dark:#5c427d;--line:#e8e0ef;--green:#eaf8ef;--green-dark:#39785b;--shadow:0 8px 28px rgba(54,38,75,.07)}
+*{box-sizing:border-box}body{margin:0;background:#f8f6fb;color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}.wrap{width:min(760px,100%);margin:auto;padding:20px 16px 48px}header{padding:18px 4px 22px}.eyebrow{font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--purple);font-weight:800}.title{font-size:1.8rem;margin:5px 0}.sub,.quiet,.hint{color:var(--muted)}.airlock-hero,.panel{background:#fff;border:1px solid var(--line);border-radius:20px;padding:20px;margin:0 0 14px;box-shadow:var(--shadow)}h2{font-size:1.2rem;margin:0 0 12px}h3{font-size:1rem;margin:0 0 6px}.lead{color:#625b6d}.label{display:block;font-weight:700;margin:14px 0 6px}input:not([type=checkbox]),select,textarea{width:100%;border:1px solid #dcd2e6;border-radius:12px;padding:12px;background:#fff;color:var(--ink);font:inherit}textarea{resize:vertical}.life-quest{display:flex;gap:10px;align-items:center;margin:15px 0}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}button{border:0;border-radius:12px;padding:11px 15px;font:inherit;font-weight:750;cursor:pointer;background:#eee6f7;color:var(--purple-dark)}button.primary,button.secondary{background:#e8dcf5;color:#50376f}button.textbtn{background:transparent;color:var(--purple);padding:8px}.hint{font-size:.88rem}.game-stats{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.game-stat{background:#f3eef8;border-radius:999px;padding:7px 12px;font-size:.9rem}.rule-card,.history-item{border:1px solid var(--line);border-radius:14px;padding:13px;margin:9px 0;background:#fff}.rule-card p{margin:5px 0;color:var(--muted)}.rule-card .actions{margin-top:8px}.history-item{font-size:.92rem;background:#fbf9fd}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #c8b3e2;outline-offset:2px}
+</style></head><body><main class="wrap"><header><div class="eyebrow">LeahOS · standalone tool</div><h1 class="title">💊 Medicine & Supplements</h1><p class="sub">Your personal reminder schedule and simple tracking log.</p></header>
+<section class="app-page" id="medicinePage">
+ <section class="airlock-hero">
+  <div class="eyebrow">A gentle nudge, at the right time</div>
+  <h2>💊 Medicine & Supplements</h2>
+  <p>Keep your own reminder schedule. LeahOS records what you mark; it does not prescribe doses or decide what belongs in your routine.</p>
+ </section>
+ <section class="panel">
+  <h2>🔔 Native reminder setup</h2>
+  <p class="lead">In LeahOS Companion, Android handles reminders even when the app is not open. Choose who speaks.</p>
+  <label class="label" for="medCharacter">Reminder voice</label>
+  <select id="medCharacter" class="airlock-select">
+   <option value="dave">🐕 Dave — enthusiastic, slightly naughty</option>
+   <option value="plushie">🧸 Mr Plushie — cheeky gentleman</option>
+  </select>
+  <div class="actions"><button class="secondary" type="button" id="medEnableNotifications">Enable Android alarm access</button></div>
+  <p class="hint" id="medNotificationStatus" role="status">Android notifications and exact-alarm access may need to be enabled.</p>
+ </section>
+ <section class="panel">
+  <h2 id="medFormTitle">Add a reminder</h2>
+  <form id="medForm">
+   <label class="label" for="medCategory">Type</label>
+   <select id="medCategory" class="airlock-select"><option>Medicine</option><option>Supplement</option><option>Other</option></select>
+   <label class="label" for="medName">Name</label><input id="medName" type="text" maxlength="100" required placeholder="Name of medicine or supplement">
+   <label class="label" for="medDose">Dose / amount (optional)</label><input id="medDose" type="text" maxlength="100" placeholder="As prescribed / on the label">
+   <label class="label" for="medTime">Reminder time</label><input id="medTime" type="time" required class="airlock-text-input">
+   <label class="label" for="medInstructions">Extra note (optional)</label><textarea id="medInstructions" rows="2" class="airlock-textarea" placeholder="With food, after breakfast…"></textarea>
+   <label class="life-quest"><input type="checkbox" id="medActive" checked><span>Reminder active</span></label>
+   <div class="actions"><button class="primary" type="submit" id="medSaveButton">Save reminder</button><button class="textbtn" type="button" id="medCancelEdit" hidden>Cancel edit</button></div>
+   <p class="hint" id="medFormStatus" role="status"></p>
+  </form>
+ </section>
+ <section class="panel">
+  <h2>Today's reminders</h2>
+  <div class="game-stats"><span class="game-stat">Due: <b id="medDueCount">0</b></span><span class="game-stat">Taken: <b id="medTakenCount">0</b></span><span class="game-stat">Pending: <b id="medPendingCount">0</b></span></div>
+  <div id="medTodayList"><p class="quiet">No reminders added yet.</p></div>
+ </section>
+ <section class="panel">
+  <h2>Reminder library</h2><div id="medLibrary"><p class="quiet">No reminders saved yet.</p></div>
+ </section>
+ <section class="panel">
+  <h2>Recent history</h2><div id="medHistory"><p class="quiet">No entries logged yet.</p></div>
+  <div class="actions"><button class="secondary" type="button" id="medExport">Export medicine & supplement log</button></div>
+ </section>
+</section>
+<script>
+(function(){
+ const $=id=>document.getElementById(id); if(!$('medicinePage'))return;
+ const KEY='leahos_medicine_reminders_v1', LOG='leahos_medicine_log_v1';
+ let reminders=[],log=[],editingId=null,notified=new Set();
+ try{reminders=JSON.parse(localStorage.getItem(KEY)||'[]')||[]}catch(e){}
+ try{log=JSON.parse(localStorage.getItem(LOG)||'[]')||[]}catch(e){}
+ const day=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+ const stamp=()=>new Date().toISOString();
+ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const save=()=>{localStorage.setItem(KEY,JSON.stringify(reminders));localStorage.setItem(LOG,JSON.stringify(log))};
+ const native=()=>window.LeahOSNative&&typeof window.LeahOSNative.scheduleAlarm==='function';
+ const todayStatus=id=>log.find(x=>x.reminderId===id&&x.date===day());
+ function scheduleNative(r){
+  if(!native()||!r.active)return false;
+  const message=[r.name,r.dose,r.instructions].filter(Boolean).join(' · ');
+  try{return window.LeahOSNative.scheduleAlarm(String(r.id),'LeahOS · '+r.category,message,
+   Number(r.time.slice(0,2)),Number(r.time.slice(3,5)),'[1,2,3,4,5,6,7]',r.character||$('medCharacter').value||'dave');}
+  catch(e){return false}
+ }
+ function cancelNative(id){if(native()){try{window.LeahOSNative.cancelAlarm(String(id))}catch(e){}}}
+ function acknowledgeNative(id){if(native()){try{window.LeahOSNative.acknowledgeAlarm(String(id))}catch(e){}}}
+ function record(id,status){const r=reminders.find(x=>x.id===id);if(!r)return;log=log.filter(x=>!(x.reminderId===id&&x.date===day()));log.unshift({reminderId:id,name:r.name,category:r.category,dose:r.dose,time:r.time,status,date:day(),recordedAt:stamp()});log=log.slice(0,500);save();acknowledgeNative(id);render();}
+ function resetForm(){editingId=null;$('medForm').reset();$('medActive').checked=true;$('medFormTitle').textContent='Add a reminder';$('medSaveButton').textContent='Save reminder';$('medCancelEdit').hidden=true;}
+ function edit(id){const r=reminders.find(x=>x.id===id);if(!r)return;editingId=id;$('medCategory').value=r.category;$('medName').value=r.name;$('medDose').value=r.dose||'';$('medTime').value=r.time;$('medInstructions').value=r.instructions||'';$('medActive').checked=!!r.active;$('medCharacter').value=r.character||'dave';$('medFormTitle').textContent='Edit reminder';$('medSaveButton').textContent='Save changes';$('medCancelEdit').hidden=false;$('medForm').scrollIntoView({behavior:'smooth',block:'center'});}
+ function render(){
+  const active=reminders.filter(r=>r.active).sort((a,b)=>a.time.localeCompare(b.time)),taken=active.filter(r=>todayStatus(r.id)?.status==='Taken').length,pending=active.filter(r=>!todayStatus(r.id)).length;
+  $('medDueCount').textContent=active.length;$('medTakenCount').textContent=taken;$('medPendingCount').textContent=pending;
+  const today=$('medTodayList');today.innerHTML='';
+  if(!active.length)today.innerHTML='<p class="quiet">No active reminders. Add one above when ready.</p>';
+  active.forEach(r=>{const st=todayStatus(r.id),row=document.createElement('article');row.className='rule-card';row.innerHTML='<h3>'+esc(r.time)+' · '+esc(r.name)+'</h3><p>'+esc(r.category)+(r.dose?' · '+esc(r.dose):'')+'</p>'+(r.instructions?'<p>'+esc(r.instructions)+'</p>':'')+'<p><b>'+esc(st?.status||'Pending')+'</b></p><div class="actions"></div>';const a=row.querySelector('.actions');if(!st){[['Mark taken','Taken'],['Skip today','Skipped']].forEach(([label,status])=>{const b=document.createElement('button');b.type='button';b.className=status==='Taken'?'secondary':'textbtn';b.textContent=label;b.onclick=()=>record(r.id,status);a.append(b)})}else{const b=document.createElement('button');b.type='button';b.className='textbtn';b.textContent='Change status';b.onclick=()=>{if(confirm('Clear today’s status so it can be recorded again?')){log=log.filter(x=>!(x.reminderId===r.id&&x.date===day()));save();render()}};a.append(b)}today.append(row)});
+  const lib=$('medLibrary');lib.innerHTML='';if(!reminders.length)lib.innerHTML='<p class="quiet">No reminders saved yet.</p>';
+  reminders.slice().sort((a,b)=>a.time.localeCompare(b.time)).forEach(r=>{const row=document.createElement('article');row.className='rule-card';row.innerHTML='<h3>'+esc(r.name)+'</h3><p>'+esc(r.category)+' · '+esc(r.time)+(r.dose?' · '+esc(r.dose):'')+'</p><p>'+(r.active?'Active':'Paused')+'</p><div class="actions"><button class="secondary" type="button" data-edit="'+esc(r.id)+'">Edit</button><button class="textbtn" type="button" data-toggle="'+esc(r.id)+'">'+(r.active?'Pause':'Resume')+'</button><button class="textbtn" type="button" data-delete="'+esc(r.id)+'">Remove</button></div>';lib.append(row)});
+  lib.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>edit(b.dataset.edit));lib.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=()=>{const r=reminders.find(x=>x.id===b.dataset.toggle);if(r){r.active=!r.active;if(r.active)scheduleNative(r);else cancelNative(r.id);save();render()}});
+  lib.querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>{const r=reminders.find(x=>x.id===b.dataset.delete);if(r&&confirm('Remove '+r.name+'? Past history will be kept.')){cancelNative(r.id);reminders=reminders.filter(x=>x.id!==r.id);save();render()}});
+  const hist=$('medHistory');hist.innerHTML='';const recent=log.slice(0,25);if(!recent.length)hist.innerHTML='<p class="quiet">No entries logged yet.</p>';recent.forEach(x=>{const d=document.createElement('div');d.className='history-item';d.textContent=x.date+' · '+x.time+' · '+x.name+' · '+x.status;hist.append(d)});
+ }
+ $('medForm').addEventListener('submit',e=>{e.preventDefault();const name=$('medName').value.trim(),time=$('medTime').value;if(!name||!time)return;const data={category:$('medCategory').value,name,dose:$('medDose').value.trim(),time,instructions:$('medInstructions').value.trim(),active:$('medActive').checked,character:$('medCharacter').value};if(editingId){const i=reminders.findIndex(x=>x.id===editingId);if(i>=0)reminders[i]={...reminders[i],...data}}else reminders.push({id:'med_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),...data,createdAt:stamp()});save();const saved=editingId?reminders.find(x=>x.id===editingId):reminders[reminders.length-1];if(saved&&saved.active){if(editingId)cancelNative(saved.id);scheduleNative(saved)}else if(saved)cancelNative(saved.id);resetForm();$('medFormStatus').textContent=native()?'Reminder saved to Android alarms. 💚':'Saved. Background alarms require LeahOS Companion.';if(window.LeahOSNotifications)window.LeahOSNotifications.push('Reminder saved',saved.name+' · '+saved.time);render()});
+ $('medCancelEdit').addEventListener('click',resetForm);
+ $('medEnableNotifications').addEventListener('click',()=>{if(native()){window.LeahOSNative.requestNotificationPermission();window.LeahOSNative.requestExactAlarmAccess();$('medNotificationStatus').textContent='Android permission screens opened. Enable notifications and exact alarms, then return here.';}else{$('medNotificationStatus').textContent='Open this page in LeahOS Companion to use Android alarms.';}});
+ if(native()){ $('medNotificationStatus').textContent='LeahOS Companion native alarms detected.'; reminders.filter(r=>r.active).forEach(scheduleNative); }
+ else $('medNotificationStatus').textContent='Browser-only mode: no reliable alerts when this page is closed.';
+ $('medExport').addEventListener('click',()=>{const payload={app:'LeahOS',type:'medicine-and-supplement-log',exportedAt:stamp(),reminders,history:log};const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='leahos-medicine-supplement-log-'+day()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1200)});
+ render();
+})();
+</script>
+</main></body></html>
